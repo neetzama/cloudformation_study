@@ -1,0 +1,212 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: jenkins-practice
+Parameters:
+  NamePrefix:
+    Type: String
+    Description: Name tag prefix
+    MinLength: 1
+    Default: test
+# EC2Parameters
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+    Default: payblog
+  InstanceType:
+    Description: WebServer EC2 instance type
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+    - t1.micro
+    - t2.nano
+    - t2.micro
+    - t2.small
+    - t2.medium
+    - t2.large
+    ConstraintDescription: must be a valid EC2 instance type.
+# DBParameters
+  DBMasterUsername:
+    Type: String
+    Default: 'dbuser'
+    NoEcho: true
+    MinLength: 1
+    MaxLength: 16
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
+    ConstraintDescription: 'must begin with a letter and contain alphanumeric characters'
+  DBPassword:
+    Type: String
+    Default: 'dbpassword'
+    NoEcho: true
+    MinLength: 8
+    MaxLength: 30
+    AllowedPattern: '[a-zA-Z0-9]*'
+    ConstraintDescription: 'must contain only alphanumeric characters'
+
+Resources:
+# Vpc
+  MyVpc:
+    Type: "AWS::EC2::VPC"
+    Properties:
+      CidrBlock: "10.0.0.0/16"
+      Tags:
+        - Key: Name
+          Value: !Sub "${NamePrefix}-vpc"
+
+# SecurityGroup
+  EC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub "${NamePrefix}-ec2-sg"
+      GroupDescription: Allow SSH and HTTP to MyVpc
+      VpcId: !Ref MyVpc
+      SecurityGroupIngress:
+        # HTTP
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        # SSH
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub "${NamePrefix}-ec2-sg"
+
+# Igw
+  MyIgw:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub "${NamePrefix}-igw"
+  MyIgwAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref MyIgw
+      VpcId: !Ref MyVpc
+
+# PublicSubnet
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: ap-northeast-1a
+      CidrBlock: 10.0.10.0/24
+      VpcId: !Ref MyVpc
+      Tags:
+        - Key: Name
+          Value: !Sub "${NamePrefix}-pubric-subnet"
+
+# PublicSubnetTable
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref MyVpc
+      Tags:
+        - Key: Name
+          Value: !Sub "${NamePrefix}-public-route"
+
+# PublicSubnet-Igw 間のルーティング 
+  MyRoute:
+    Type: AWS::EC2::Route
+    DependsOn: MyIgw
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      GatewayId: !Ref MyIgw
+      DestinationCidrBlock: 0.0.0.0/0
+
+# PublicRouteTable と PublicSubnet を関連付け
+  PublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet
+
+# EC2Instance
+  EC2:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-0278fe6949f6b1a06
+      KeyName: !Ref KeyName
+      InstanceType: !Ref InstanceType
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: 'true'
+          DeviceIndex: '0'
+          PrivateIpAddress: 10.0.10.30
+          SubnetId: !Ref PublicSubnet
+          GroupSet:
+            - !Ref EC2SecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub "${NamePrefix}-ec2-instance"
+
+# ElasticIP
+  MyEIP:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      EIP: 52.193.25.1
+      InstanceId: !Ref EC2
+
+# PrivateSeculityGroup
+  DBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub "${NamePrefix}-db-sg"
+      GroupDescription: Allow EC2SecurityGroup
+      VpcId: !Ref MyVpc
+        # Role
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          SourceSecurityGroupId: !Ref EC2SecurityGroup
+
+# PrivateSubnet
+  PrivateSubnet1a:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: ap-northeast-1a
+      CidrBlock: 10.0.20.0/24
+      VpcId: !Ref MyVpc
+      Tags:
+        - Key: Name
+          Value: !Sub "${NamePrefix}-private-subnet-1a"
+  PrivateSubnet1c:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: ap-northeast-1c
+      CidrBlock: 10.0.21.0/24
+      VpcId: !Ref MyVpc
+      Tags:
+        - Key: Name
+          Value: !Sub "${NamePrefix}-private-subnet-1c"
+
+# RDSSubnetGroup
+  RDSSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: RDSSubnetGroup related to PrivateSubnet
+      DBSubnetGroupName: !Sub "${NamePrefix}-db-subnet-group"
+      SubnetIds:
+        - !Ref PrivateSubnet1a
+        - !Ref PrivateSubnet1c
+      Tags:
+        - Key: Name
+          Value: !Sub "${NamePrefix}-db-subnet-group"
+
+# RDSInstance
+  RDSInstance:
+    Type: AWS::RDS::DBInstance
+    DependsOn: DBSecurityGroup
+    Properties:
+      DBInstanceIdentifier: !Sub "${NamePrefix}-db"
+      Engine: postgres
+      EngineVersion: '9.5.19'
+      DBInstanceClass: db.t2.micro
+      AllocatedStorage: '20'
+      MasterUsername: !Ref DBMasterUsername
+      MasterUserPassword: !Ref DBPassword
+      VPCSecurityGroups:
+        - !Ref DBSecurityGroup
+      DBSubnetGroupName: !Ref RDSSubnetGroup

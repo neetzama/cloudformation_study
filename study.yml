@@ -106,8 +106,6 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub "${NamePrefix}-public-route"
-
-# PublicSubnet-Igw 間のルーティング 
   MyRoute:
     Type: AWS::EC2::Route
     DependsOn: MyIgw
@@ -115,8 +113,6 @@ Resources:
       RouteTableId: !Ref PublicRouteTable
       GatewayId: !Ref MyIgw
       DestinationCidrBlock: 0.0.0.0/0
-
-# PublicRouteTable と PublicSubnet を関連付け
   PublicSubnetRouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
@@ -127,7 +123,7 @@ Resources:
   EC2:
     Type: AWS::EC2::Instance
     Properties:
-      ImageId: ami-0278fe6949f6b1a06
+      ImageId: ami-0dff94190341217dc
       KeyName: !Ref KeyName
       InstanceType: !Ref InstanceType
       NetworkInterfaces:

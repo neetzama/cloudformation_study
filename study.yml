@@ -80,7 +80,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       AvailabilityZone: ap-northeast-1a
-      CidrBlock: 10.0.10.10/24
+      CidrBlock: 10.0.10.0/24
       VpcId: !Ref MyVpc
       Tags:
         - Key: Name
@@ -89,7 +89,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       AvailabilityZone: ap-northeast-1c
-      CidrBlock: 10.0.20.10/24
+      CidrBlock: 10.0.10.0/24
       VpcId: !Ref MyVpc
       Tags:
         - Key: Name
@@ -132,7 +132,7 @@ Resources:
         - AssociatePublicIpAddress: 'true'
           DeviceIndex: '0'
           PrivateIpAddress: 10.0.10.30
-          SubnetId: !Ref PublicSubnet
+          SubnetId: !Ref PublicSubnetAZ1a
           GroupSet:
             - !Ref EC2SecurityGroup
       Tags:
@@ -208,3 +208,55 @@ Resources:
       VPCSecurityGroups:
         - !Ref DBSecurityGroup
       DBSubnetGroupName: !Ref RDSSubnetGroup
+
+# ALB
+  ALB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties: 
+      Name: !Sub "${NamePrefix}-alb"
+      IpAddressType: ipv4
+      Type: application
+      Scheme: internet-facing
+      SecurityGroups: 
+        - !Ref EC2SecurityGroup
+      Subnets:
+        - !Ref PublicSubnetAZ1a
+        - !Ref PublicSubnetAZ1c
+      Tags: 
+        - Key: Name
+          Value: !Sub "${NamePrefix}-alb"
+
+# ALBTargetGroup
+  ALBTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub "${NamePrefix}-alb-target-group"
+      Port: 80
+      Protocol: HTTP
+      VpcId: !Ref MyVpc
+      HealthCheckIntervalSeconds: 30
+      HealthCheckPath: /
+      HealthCheckPort: "traffic-port"
+      HealthCheckProtocol: HTTP
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 2
+      HealthCheckTimeoutSeconds: 5
+      Matcher: 
+        HttpCode: 200
+      Tags:
+        - Key: Name
+          Value: !Sub "${NamePrefix}-alb-target-group"
+      Targets:
+        - Id: !Ref EC2
+          Port: 80
+
+# ALBListener
+  ALBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref ALB
+      DefaultActions:
+        - TargetGroupArn: !Ref ALBTargetGroup
+          Type: forward
+      Port: 80
+      Protocol: HTTP

@@ -76,15 +76,24 @@ Resources:
       VpcId: !Ref MyVpc
 
 # PublicSubnet
-  PublicSubnet:
+  PublicSubnetAZ1a:
     Type: AWS::EC2::Subnet
     Properties:
       AvailabilityZone: ap-northeast-1a
-      CidrBlock: 10.0.10.0/24
+      CidrBlock: 10.0.10.10/24
       VpcId: !Ref MyVpc
       Tags:
         - Key: Name
-          Value: !Sub "${NamePrefix}-pubric-subnet"
+          Value: !Sub "${NamePrefix}-public-subnet1a"
+  PublicSubnetAZ1c:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: ap-northeast-1c
+      CidrBlock: 10.0.20.10/24
+      VpcId: !Ref MyVpc
+      Tags:
+        - Key: Name
+          Value: !Sub "${NamePrefix}-public-subnet1c"
 
 # PublicSubnetTable
   PublicRouteTable:
@@ -98,14 +107,19 @@ Resources:
     Type: AWS::EC2::Route
     DependsOn: MyIgw
     Properties:
-      RouteTableId: !Ref PublicRouteTable
       GatewayId: !Ref MyIgw
+      RouteTableId: !Ref PublicRouteTable
       DestinationCidrBlock: 0.0.0.0/0
-  PublicSubnetRouteTableAssociation:
+  RouteLocalAZ1a:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       RouteTableId: !Ref PublicRouteTable
-      SubnetId: !Ref PublicSubnet
+      SubnetId: !Ref PublicSubnetAZ1a
+  RouteLocalAZ1c:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnetAZ1c
 
 # EC2Instance
   EC2:

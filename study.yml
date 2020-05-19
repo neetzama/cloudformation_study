@@ -143,7 +143,7 @@ Resources:
   MyEIP:
     Type: AWS::EC2::EIPAssociation
     Properties:
-      EIP: 52.193.25.1
+      EIP: 176.34.32.51
       InstanceId: !Ref EC2
 
 # PrivateSeculityGroup

@@ -125,7 +125,7 @@ Resources:
   EC2:
     Type: AWS::EC2::Instance
     Properties:
-      ImageId: ami-0ad2afcd49c6ba3c9
+      ImageId: ami-0a825d4cb54b2edbe
       KeyName: !Ref KeyName
       InstanceType: t2.micro
       NetworkInterfaces:

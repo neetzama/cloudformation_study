@@ -203,11 +203,16 @@ Resources:
       EngineVersion: '9.5.19'
       DBInstanceClass: db.t2.micro
       AllocatedStorage: '20'
+      BackupRetentionPeriod: 7
+      DBName: payblog
       MasterUsername: !Ref DBMasterUsername
       MasterUserPassword: !Ref DBPassword
       VPCSecurityGroups:
         - !Ref DBSecurityGroup
       DBSubnetGroupName: !Ref RDSSubnetGroup
+      Tags:
+        - Key: Name
+          Value: !Sub "${NamePrefix}-rds"
 
 # ALB
   ALB:

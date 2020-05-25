@@ -264,4 +264,4 @@ Resources:
         - TargetGroupArn: !Ref ALBTargetGroup
           Type: forward
       Port: 80
-      Protocol: HTTPGrou
+      Protocol: HTTP

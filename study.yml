@@ -161,7 +161,7 @@ Resources:
           SourceSecurityGroupId: !Ref EC2SecurityGroup
 
 # PrivateSubnet
-  PrivateSubnet1a:
+  PrivateSubnetAZ1a:
     Type: AWS::EC2::Subnet
     Properties:
       AvailabilityZone: ap-northeast-1a
@@ -170,7 +170,7 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub "${NamePrefix}-private-subnet-1a"
-  PrivateSubnet1c:
+  PrivateSubnetAZ1c:
     Type: AWS::EC2::Subnet
     Properties:
       AvailabilityZone: ap-northeast-1c
@@ -187,8 +187,8 @@ Resources:
       DBSubnetGroupDescription: RDSSubnetGroup related to PrivateSubnet
       DBSubnetGroupName: !Sub "${NamePrefix}-db-subnet-group"
       SubnetIds:
-        - !Ref PrivateSubnet1a
-        - !Ref PrivateSubnet1c
+        - !Ref PrivateSubnetAZ1a
+        - !Ref PrivateSubnetAZ1c
       Tags:
         - Key: Name
           Value: !Sub "${NamePrefix}-db-subnet-group"
@@ -264,4 +264,4 @@ Resources:
         - TargetGroupArn: !Ref ALBTargetGroup
           Type: forward
       Port: 80
-      Protocol: HTTP
+      Protocol: HTTPGrou

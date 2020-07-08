@@ -309,3 +309,15 @@ Resources:
         - !Ref ALBTargetGroup
       TerminationPolicies:
         - NewestInstance
+
+  LaunchingLifecycleHook:
+    Type: "AWS::AutoScaling::LifecycleHook"
+    Properties:
+      AutoScalingGroupName: !Ref AutoScalingGroup
+      HeartbeatTimeout: 300
+      LifecycleHookName: !Sub "${NamePrefix}-launching-lifecycle-hook"
+      LifecycleTransition: autoscaling:EC2_INSTANCE_LAUNCHING
+      NotificationMetadata: "Add instance to Auto Scaling"
+      NotificationTargetARN: !GetAtt AutoScalingGroupLifecycleHookQueue.Arn
+      RoleARN: !Sub "arn:aws:iam::${AWS::AccountId}:role/EC2AutoScalingNotificationAccess"
+    DependsOn: AutoScalingGroupLifecycleHookQueue

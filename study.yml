@@ -268,7 +268,7 @@ Resources:
         - ap-northeast-1c
       DesiredCapacity: 1
       MinSize: 1
-      MaxSize: 1
+      MaxSize: 3
       Cooldown: "120"
       HealthCheckGracePeriod: 300
       HealthCheckType: EC2
@@ -303,3 +303,42 @@ Resources:
     Properties:
       QueueName: !Sub "${NamePrefix}-lifecyclehook-sqs"
       VisibilityTimeout: 60
+
+# CloudWatch
+  InstancesShortageAlarm:
+    Type: "AWS::CloudWatch::Alarm"
+    Properties:
+      AlarmDescription: "'Average CPU utilization over last 1 minutes higher than 50%'"
+      Namespace: "AWS/EC2"
+      AlarmName: !Sub "${NamePrefix}-AutoScaling-ScaleOutAlarm"
+      AlarmActions:
+        - !Ref AutoScalingUpPolicy
+        - !Sub "arn:aws:sns:${AWS::Region}:${AWS::AccountId}:autoscaling_cloudwatch"
+      MetricName: CPUUtilization
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      EvaluationPeriods: 1
+      Period: 60
+      Statistic: Average
+      Threshold: 60
+      Dimensions:
+        - Name: AutoScalingGroupName
+          Value: !Ref AutoScalingGroup
+
+  InstancesExcessAlarm:
+    Type: "AWS::CloudWatch::Alarm"
+    Properties:
+      AlarmDescription: "Alarm to reduce capacity if CPU is low"
+      Namespace: "AWS/EC2"
+      AlarmName: !Sub "${NamePrefix}-AutoScaling-ScaleInAlarm"
+      AlarmActions:
+        - !Ref AutoScalingDownPolicy
+        - !Sub "arn:aws:sns:${AWS::Region}:${AWS::AccountId}:autoscaling_cloudwatch"
+      MetricName: CPUUtilization
+      ComparisonOperator: LessThanOrEqualToThreshold #required
+      EvaluationPeriods: 1 #required
+      Period: 60
+      Statistic: Average
+      Threshold: 60
+      Dimensions:
+        - Name: AutoScalingGroupName
+          Value: !Ref AutoScalingGroup

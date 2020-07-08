@@ -285,6 +285,34 @@ Resources:
       TerminationPolicies:
         - NewestInstance
 
+# stepscaling
+  AutoScalingUpPolicy:
+    Type: "AWS::AutoScaling::ScalingPolicy"
+    Properties:
+      AutoScalingGroupName: !Ref AutoScalingGroup
+      PolicyType: StepScaling
+      AdjustmentType: ExactCapacity
+      MetricAggregationType: "Average"
+      EstimatedInstanceWarmup: 60
+      StepAdjustments:
+        - MetricIntervalLowerBound: 0
+          MetricIntervalUpperBound: 15
+          ScalingAdjustment: 2
+        - MetricIntervalLowerBound: 15
+          ScalingAdjustment: 3
+  
+  AutoScalingDownPolicy:
+    Type: "AWS::AutoScaling::ScalingPolicy"
+    Properties:
+      AutoScalingGroupName: !Ref AutoScalingGroup
+      PolicyType: StepScaling
+      AdjustmentType: ExactCapacity
+      MetricAggregationType: "Average"
+      EstimatedInstanceWarmup: 60
+      StepAdjustments:
+        - MetricIntervalUpperBound: 0
+          ScalingAdjustment: 1
+
   LaunchingLifecycleHook:
     Type: "AWS::AutoScaling::LifecycleHook"
     Properties:
@@ -334,8 +362,8 @@ Resources:
         - !Ref AutoScalingDownPolicy
         - !Sub "arn:aws:sns:${AWS::Region}:${AWS::AccountId}:autoscaling_cloudwatch"
       MetricName: CPUUtilization
-      ComparisonOperator: LessThanOrEqualToThreshold #required
-      EvaluationPeriods: 1 #required
+      ComparisonOperator: LessThanOrEqualToThreshold
+      EvaluationPeriods: 1
       Period: 60
       Statistic: Average
       Threshold: 60

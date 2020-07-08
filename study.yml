@@ -321,3 +321,10 @@ Resources:
       NotificationTargetARN: !GetAtt AutoScalingGroupLifecycleHookQueue.Arn
       RoleARN: !Sub "arn:aws:iam::${AWS::AccountId}:role/EC2AutoScalingNotificationAccess"
     DependsOn: AutoScalingGroupLifecycleHookQueue
+
+# SQS
+  AutoScalingGroupLifecycleHookQueue:
+    Type: "AWS::SQS::Queue"
+    Properties:
+      QueueName: !Sub "${NamePrefix}-lifecyclehook-sqs"
+      VisibilityTimeout: 60

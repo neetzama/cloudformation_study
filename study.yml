@@ -121,31 +121,6 @@ Resources:
       RouteTableId: !Ref PublicRouteTable
       SubnetId: !Ref PublicSubnetAZ1c
 
-# EC2Instance
-  EC2:
-    Type: AWS::EC2::Instance
-    Properties:
-      ImageId: ami-0a825d4cb54b2edbe
-      KeyName: !Ref KeyName
-      InstanceType: t2.micro
-      NetworkInterfaces:
-        - AssociatePublicIpAddress: 'true'
-          DeviceIndex: '0'
-          PrivateIpAddress: 10.0.10.30
-          SubnetId: !Ref PublicSubnetAZ1a
-          GroupSet:
-            - !Ref EC2SecurityGroup
-      Tags:
-        - Key: Name
-          Value: !Sub "${NamePrefix}-ec2-instance"
-
-# ElasticIP
-  MyEIP:
-    Type: AWS::EC2::EIPAssociation
-    Properties:
-      EIP: 176.34.32.51
-      InstanceId: !Ref EC2
-
 # PrivateSeculityGroup
   DBSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -275,7 +250,7 @@ Resources:
             SnapshotId: snap-0357151fc2594c254
             VolumeType: gp2
       EbsOptimized: false
-      ImageId: ami-02925125eed222565
+      ImageId: ami-0a825d4cb54b2edbe
       InstanceMonitoring: true
       InstanceType: t2.micro
       KeyName: !Ref KeyName

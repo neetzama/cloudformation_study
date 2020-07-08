@@ -246,14 +246,12 @@ Resources:
       HealthyThresholdCount: 2
       UnhealthyThresholdCount: 2
       HealthCheckTimeoutSeconds: 5
-      Matcher: 
+      Matcher:
         HttpCode: 200
       Tags:
         - Key: Name
           Value: !Sub "${NamePrefix}-alb-target-group"
-      Targets:
-        - Id: !Ref EC2
-          Port: 80
+    DependsOn: AutoScalingLaunchConfig
 
 # ALBListener
   ALBListener:
@@ -265,3 +263,49 @@ Resources:
           Type: forward
       Port: 80
       Protocol: HTTP
+
+# AutoScaling
+  AutoScalingLaunchConfig:
+    Type: "AWS::AutoScaling::LaunchConfiguration"
+    Properties:
+      AssociatePublicIpAddress: "true"
+      BlockDeviceMappings:
+        - DeviceName: "/dev/sda1"
+          Ebs:
+            SnapshotId: snap-0357151fc2594c254
+            VolumeType: gp2
+      EbsOptimized: false
+      ImageId: ami-02925125eed222565
+      InstanceMonitoring: true
+      InstanceType: t2.micro
+      KeyName: !Ref KeyName
+      LaunchConfigurationName: !Sub "${NamePrefix}-autoscaling-launchconfig"
+      PlacementTenancy: default 
+      SecurityGroups:
+        - !Ref EC2SecurityGroup
+
+  AutoScalingGroup:
+    Type: "AWS::AutoScaling::AutoScalingGroup"
+    Properties:
+      AutoScalingGroupName: !Sub "${NamePrefix}-autoscaling-group"
+      AvailabilityZones:
+        - ap-northeast-1a
+        - ap-northeast-1c
+      DesiredCapacity: 1
+      MinSize: 1
+      MaxSize: 1
+      Cooldown: "120"
+      HealthCheckGracePeriod: 300
+      HealthCheckType: EC2
+      LaunchConfigurationName: !Ref AutoScalingLaunchConfig
+      Tags:
+        - Key: Name
+          Value: !Sub "${NamePrefix}_autoscaling_group"
+          PropagateAtLaunch: true
+      VPCZoneIdentifier:
+         - !Ref PublicSubnetAZ1a
+         - !Ref PublicSubnetAZ1c
+      TargetGroupARNs:
+        - !Ref ALBTargetGroup
+      TerminationPolicies:
+        - NewestInstance

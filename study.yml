@@ -247,7 +247,7 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: "/dev/sda1"
           Ebs:
-            SnapshotId: snap-0357151fc2594c254
+            SnapshotId: snap-02d42f6490583a302
             VolumeType: gp2
       EbsOptimized: false
       ImageId: ami-0a825d4cb54b2edbe
